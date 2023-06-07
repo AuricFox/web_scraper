@@ -1,6 +1,7 @@
 # web_scraper
 
-Python web scraper used for extracting data for a machine learning model.
+Python web scraper used for extracting data for a machine learning model. The target data is tax regulations 
+within the United States.
 
 ## Setting Up Environment
 
@@ -17,7 +18,7 @@ C: env\Scripts\activate         # Windows
 C: source env/bin/activate      # Mac
 ```  
 
-## Setting Up Scrapy Directory
+## Setting Up Scrapy Files
 
 This command creates a new directory that stores the config file, spider directory, and python code.
 
@@ -26,15 +27,29 @@ Scrapy create command:
 scrapy startproject filename
 ```
 
+Once the files have been created, cd into the spider directory and execute the following command to create 
+a spider py file:  
+```
+scrapy genspider [spider filename] [url of site being scraped]  
+scrapy genspider taxspider www.irs.com
+```
+
+## Running Spider
+
+The scraper can be executed once all the files have been created. First, cd into the directory containing the initial py 
+files (items.py, middlewares.py, etc.). Enter the following command to run the scraper:  
+```
+scrapy crawl [spider filename]
+scrapy crawl taxspider
+```
+
 ## Spiders
 
 Spiders are classes which define how a certain site (or a group of sites) will be scraped, including how to perform the crawl (i.e. follow links) and how to extract structured data from their pages (i.e. scraping items). In other words, Spiders are the place where you define the custom behaviour for crawling and parsing pages for a particular site (or, in some cases, a group of sites).
 
 For spiders, the scraping cycle goes through something like this:
 
-1. You start by generating the initial Requests to crawl the first URLs, and specify a callback function to be called with the response downloaded from those requests.
-
-The first requests to perform are obtained by calling the start_requests() method which (by default) generates Request for the URLs specified in the start_urls and the parse method as callback function for the Requests.
+1. You start by generating the initial Requests to crawl the first URLs, and specify a callback function to be called with the response downloaded from those requests. The first requests to perform are obtained by calling the start_requests() method which (by default) generates Request for the URLs specified in the start_urls and the parse method as callback function for the Requests.
 
 2. In the callback function, you parse the response (web page) and return item objects, Request objects, or an iterable of these objects. Those Requests will also contain a callback (maybe the same) and will then be downloaded by Scrapy and then their response handled by the specified callback.
 
