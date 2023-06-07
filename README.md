@@ -20,11 +20,13 @@ C: source env/bin/activate      # Mac
 
 ## Setting Up Scrapy Files
 
-This command creates a new directory that stores the config file, spider directory, and python code.
+CD into your working directory and execute the following command to setup the config file, 
+spider directory, and other python files (items.py, middlewares.py, etc.).
 
 Scrapy create command:  
 ```
 scrapy startproject filename
+scrapy startproject taxscraper  
 ```
 
 Once the files have been created, cd into the spider directory and execute the following command to create 
