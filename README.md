@@ -82,6 +82,7 @@ Typical uses of item pipelines are:
 
 The Scrapy settings allows you to customize the behaviour of all Scrapy components, including the core, extensions, pipelines and spiders themselves.
 
-## Sources
+## Helpful Links
  
-[Scrapy Documentation](https://docs.scrapy.org/en/latest/index.html)
+[Scrapy Documentation](https://docs.scrapy.org/en/latest/index.html)  
+[2022 Minnesota Statutes](https://www.revisor.mn.gov/statutes/)
