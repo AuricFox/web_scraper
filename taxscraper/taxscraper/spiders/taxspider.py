@@ -1,47 +1,49 @@
 import scrapy
-
+import logging
 
 class TaxSpider(scrapy.Spider):
     name = "taxspider"
-    allowed_domains = ["www.revisor.mn.gov/statutes/", "www.irs.com"]
-    start_urls = ["https://www.revisor.mn.gov/statutes/", "https://www.irs.com"]
+    allowed_domains = ["www.revisor.mn.gov/statutes/"]
+    start_urls = ["https://www.revisor.mn.gov/statutes/"]
 
     # ===============================================================================
     # Used for iterating thru pages and passing the data to the parse_page function
     def parse(self, response):
+        table_rows = response.xpath('//tbody/tr')                   # Get data in the table body
+        print(f'Size of data: {len(table_rows)}')
 
-        target = response.css('''TARGET TAG''')                     # Enter target css tag here
+        # Iterate thru all the rows in the table and get the links to the next page
+        for data in table_rows:
+            next_page = data.xpath('.//a/@href').get()              # Get the next page link
+            print(f'Next Link: {next_page}')
+            '''
+            Some pages have absolute urls and others have relative urls.
+            The relative urls need to be reformatted: 
+            /statues/cite/1.01 => https://www.revisor.mn.gov/statutes/cite/1.01
+            or
+            /statues/cite/1.01 => /cite/1.01
+            '''
+            if(self.start_urls[0] not in next_page):           # Invalid relative url
+                subpage = next_page.split('statues/')[-1]           # Get last part of relative url
+                next_page = f'{self.start_urls[0]}{subpage}'        # Append absolute and relative url
 
-        for data in target:                                         # Enter individual links in page
-            page_url = data.css('''TARGET TAG''')
-            '''
-            if('TAG/' in next_page):
-                item_url = f'https://www.irs.com/{next_page}'
-            else:
-                item_url = f'https://www.irs.com/TAG/{next_page}'
-            yield response.follow(item_url, callback=self.parse_page)   # Parse data from page
-            '''
-    
-        next_page = response.css('''TARGET TAG''').get()                # Get href for the next page
+            yield response.follow(next_page, callback=self.parse)   # Recursively pass next page 
 
-        if next_page is not None:                                       # Run until there are no more pages
-            '''
-            if('TAG/' in next_page):
-                next_page_url = f'https://www.irs.com/{next_page}'
-            else:
-                next_page_url = f'https://www.irs.com/TAG/{next_page}'
-            '''
-            next_page_url = f'https://www.irs.com/{next_page}'
-            yield response.follow(next_page_url, callback=self.parse)
+        if not table_rows:                                          # Last page reached, parse it
+            self.parse_page(response)
     
     # ===============================================================================
     # Used as a helper function for parsing the html from target pages
     def parse_page(self, res):
-        
-        data = res.css('''TARGET TAG''')
+        print("working")
+        #data = res.css('''TARGET TAG''')
 
         # Collect target data here
         yield {
             'url': res.url,
             'title': res.css('.title').get()
         }
+
+# Adjust the logging settings
+logging.getLogger('scrapy').propagate = False
+logging.getLogger().setLevel(logging.WARNING)
