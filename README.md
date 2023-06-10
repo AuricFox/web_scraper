@@ -82,6 +82,22 @@ Typical uses of item pipelines are:
 
 The Scrapy settings allows you to customize the behaviour of all Scrapy components, including the core, extensions, pipelines and spiders themselves.
 
+## Checking Website's Crawling Protocols
+
+To check a website's crawling protocols or guidelines, look for a file called "robots.txt" on the website's domain. The "robots.txt" file is a standardized way for websites to communicate their crawling guidelines to web crawlers, including search engine bots.
+
+Here's how you can check a website's "robots.txt" file:
+
+1. Open a web browser and go to the website's domain.  
+
+2. Append "/robots.txt" to the end of the domain URL and press Enter. For example, if the website is "example.com", the URL to check the "robots.txt" file would be "example.com/robots.txt".
+
+3. The web browser will display the contents of the "robots.txt" file if it exists and is accessible.
+
+4. The "robots.txt" file may contain specific directives that instruct web crawlers on which parts of the website they are allowed to access and crawl. It may include rules such as disallowing access to certain directories or specifying user-agent specific instructions.
+
+By examining the "robots.txt" file, you can gain insights into the website's crawling policies and guidelines.
+
 ## Helpful Links
  
 [Scrapy Documentation](https://docs.scrapy.org/en/latest/index.html)  
