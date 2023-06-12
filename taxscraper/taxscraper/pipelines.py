@@ -10,4 +10,8 @@ from itemadapter import ItemAdapter
 
 class TaxscraperPipeline:
     def process_item(self, item, spider):
+
+        adapter = ItemAdapter(item)
+        field_names = adapter.field_names()
+        
         return item

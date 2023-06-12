@@ -4,6 +4,7 @@ import scrapy
 
 class TaxItem(scrapy.Item):
 
+    url = scrapy.Field()
     statute = scrapy.Field()
     section_number = scrapy.Field()
     subdiv_number = scrapy.Field()

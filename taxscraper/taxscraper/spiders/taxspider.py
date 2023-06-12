@@ -38,26 +38,108 @@ class TaxSpider(scrapy.Spider):
     
     # ===============================================================================
     # Used as a helper function for parsing the text from target pages
-    def parse_page(self, res):
-        print("===============================================================================")
-        
+    def parse_page(self, res):        
         # Extract all the text withing the page section
         #data = res.xpath('//div[@class="section"]//text()').extract()
 
-        statute = res.xpath('//div[@class="section"]/h1/text()').get()          # Get statute title
-        section_number = res.xpath('//div[@class="section"]/@id').get()         # Get section number
+        url = res.url                                                           # Get URL from response
+        statute = self.get_statute(res)                                         # Get statute title
+        section_number = self.get_section_number(res, statute)                  # Get section number
         subdiv_number = res.xpath('//div[@class="subd"]/@id').getall()          # Get subdivision number        
         info = res.xpath('//div[@class="section"]/p/text()').getall()           # Main text description
 
-        logging.info(f'\nURL: {res}\nStatute: {statute}\nSection No: {section_number}\nSub-div No: {subdiv_number}')
-        tax_item = TaxItem()
+        # Statute has been repealed, renumbered, or expired
+        if statute is None:
+            section_number = res.xpath('//div[@class="sr"]/@id').get()
 
+            text = res.xpath('//div[@class="sr"]/text()').get()
+            print(f'Text: {text}')
+            if 'Expired' in text: info.append("Expired")
+            elif 'Repealed' in text: info.append("Repealed")
+            elif 'Renumbered' in text: info.append("Renumbered")
+            else: info.append("Unknown")
+
+        # There are multiple subdivisions that have different html tags
+        elif subdiv_number:
+            info = res.xpath('//div[@class="subd"]/p/text()').getall()           # Main text description
+        '''
+        logging.info(
+            f'===============================================================================\n'
+            f'URL: {url}\n'
+            f'Statute: {statute}\n'
+            f'Section Number: {section_number}\n'
+            f'Sub-div Number: {subdiv_number}'
+        )
+        '''
+        tax_item = TaxItem()
+        tax_item['url'] = url
         tax_item['statute'] = statute
         tax_item['section_number'] = section_number
         tax_item['subdiv_number'] = subdiv_number
         tax_item['info'] = info
         
         yield tax_item
+
+    # ===============================================================================
+    # Gets statute title from response page
+    # Returns a string
+    def get_statute(self, res):
+        return res.xpath('//div[@class="section"]/h1/text()').get()
+    
+    # ===============================================================================
+    # Gets section number from response page
+    # Returns a section_number (String)
+    def get_section_number(self, res, statute):
+        subdiv_number = res.xpath('//div[@class="subd"]/@id').getall()             # Get subdivision number
+        section_number = res.xpath('//div[@class="section"]/@id').get()     # Normal statute
+
+        # Statute has been repealed, renumbered, or expired and there are NO sub-divisions
+        if statute is None and not subdiv_number:
+            section_number = res.xpath('//div[@class="sr"]/@id').get()
+        # Statute has been repealed, renumbered, or expired and there are sub-divisions
+        elif statute is None and subdiv_number:
+            section_number = res.xpath('//div[@class="sr_by_subd"]/@id').get()
+
+        return section_number
+    
+    # ===============================================================================
+    # Parses statute information from response page
+    # Returns Data as a dictionary {sub-division number: info}
+    def get_subdiv_info(self, res, statute):
+        subdiv_number = res.xpath('//div[@class="subd"]')         
+        info = res.xpath('//div[@class="section"]/p/text()').getall()       # Main text description
+        data = {}
+
+        # There are multiple subdivisions that have different html tags
+        if subdiv_number:
+            for div in subdiv_number:
+                id = div.xpath('./@id').get()                               # Get the id attribute of the div
+                text = div.xpath('.//text()').getall()                      # Get all the text within the div
+
+                # Remove leading/trailing whitespace and join the text together
+                text = ' '.join(text).strip()
+
+                if 'Expired' in text: text = "Expired"
+                elif 'Repealed' in text: text = "Repealed"
+                elif 'Renumbered' in text: text = "Renumbered"
+                else: text = "Unknown"
+
+                data[id] = text
+        # There are no subdivisions
+        elif not subdiv_number:
+
+            # Statute has been repealed, renumbered, or expired
+            if statute is None:
+
+                text = res.xpath('//div[@class="sr"]/text()').get()
+                print(f'Text: {text}')
+                if 'Expired' in text: text = "Expired"
+                elif 'Repealed' in text: text = "Repealed"
+                elif 'Renumbered' in text: text = "Renumbered"
+                else: text = "Unknown"
+        
+        
+        return data
 
 # Adjust the logging settings
 logging.getLogger('scrapy').propagate = False

@@ -45,6 +45,12 @@ scrapy crawl [spider filename]
 scrapy crawl taxspider
 ```
 
+To send results to json file, first cd into the directory containing your spider then enter the following command:  
+```
+scrapy runspider [spider py file] -o [output json file]  
+scrapy runspider taxspider.py -o output.json
+```
+
 ## Spiders
 
 Spiders are classes which define how a certain site (or a group of sites) will be scraped, including how to perform the crawl (i.e. follow links) and how to extract structured data from their pages (i.e. scraping items). In other words, Spiders are the place where you define the custom behaviour for crawling and parsing pages for a particular site (or, in some cases, a group of sites).
