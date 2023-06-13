@@ -1,6 +1,7 @@
 import scrapy
 import logging
 from taxscraper.items import TaxItem
+from tqdm import tqdm
 
 class TaxSpider(scrapy.Spider):
     name = "taxspider"
@@ -17,28 +18,33 @@ class TaxSpider(scrapy.Spider):
         if len(table_rows) == 0:                                    # Last page reached, parse it
             yield from self.parse_page(response)
 
-        # Iterate thru all the rows in the table and get the links to the next page
-        for data in table_rows:
-            next_page = data.xpath('.//a/@href').get()              # Get the next page link
+        else:
+            # Iterate thru all the rows in the table and get the links to the next page
+            progress_bar = tqdm(total=len(table_rows), desc='Processing Pages', unit='page')
+            for data in table_rows:
+                next_page = data.xpath('.//a/@href').get()              # Get the next page link
+                
+                '''
+                Some pages have absolute urls and others have relative urls.
+                The relative urls need to be reformatted: 
+                /statues/cite/1.01 => https://www.revisor.mn.gov/statutes/cite/1.01
+                or
+                /statues/cite/1.01 => /cite/1.01
+                '''
+                if next_page is None: continue                          # Ignore rows without links
+    
+                if self.start_urls[0] not in next_page:                 # Invalid relative url
+                    subpage = next_page.split('statutes/')[-1]          # Get last part of relative url
+                    next_page = f'{self.start_urls[0]}{subpage}'        # Append absolute and relative url
+                
+                yield response.follow(next_page, callback=self.parse)   # Recursively pass next page
+                progress_bar.update(1)
             
-            '''
-            Some pages have absolute urls and others have relative urls.
-            The relative urls need to be reformatted: 
-            /statues/cite/1.01 => https://www.revisor.mn.gov/statutes/cite/1.01
-            or
-            /statues/cite/1.01 => /cite/1.01
-            '''
-            if next_page is None: continue                          # Ignore rows without links
-
-            if self.start_urls[0] not in next_page:                 # Invalid relative url
-                subpage = next_page.split('statutes/')[-1]          # Get last part of relative url
-                next_page = f'{self.start_urls[0]}{subpage}'        # Append absolute and relative url
-            
-            yield response.follow(next_page, callback=self.parse)   # Recursively pass next page 
+            progress_bar.close()
     
     # ===============================================================================
     # Used as a helper function for parsing the text from target pages
-    def parse_page(self, res):        
+    def parse_page(self, res, log=False):        
         # Extract all the text withing the page section
         #data = res.xpath('//div[@class="section"]//text()').extract()
 
@@ -47,14 +53,15 @@ class TaxSpider(scrapy.Spider):
         section_number = self.get_section_number(res, statute)                  # Get section number      
         info = self.get_subdiv_info(res, statute, section_number)               # Get div id's and text description
 
-       
-        logging.info(
-            f'===============================================================================\n'
-            f'URL: {url}\n'
-            f'Statute: {statute}\n'
-            f'Section Number: {section_number}\n'
-            f'Info:\n{info}'
-        )
+        # Print page logs 
+        if log:
+            logging.info(
+                f'===============================================================================\n'
+                f'URL: {url}\n'
+                f'Statute: {statute}\n'
+                f'Section Number: {section_number}\n'
+                f'Info:\n{info}'
+            )
         
         tax_item = TaxItem()
         tax_item['url'] = url
@@ -96,34 +103,31 @@ class TaxSpider(scrapy.Spider):
         # There are multiple subdivisions that have different html tags
         if subdiv_number:
             for div in subdiv_number:
-                id = div.xpath('./@id').get()                               # Get the id attribute of the div
-                text = div.xpath('.//p//text()').getall()                      # Get all the text within the div
+                id = div.xpath('./@id').get()                   # Get the id attribute of the div
+                text = div.xpath('.//p//text()').getall()       # Get all the text within the div
 
                 # Remove leading/trailing whitespace and join the text together
-                text = ' '.join(text).strip()
-                
-                if statute is None:
-                    text = text.strip("[]")
+                text = ''.join(text).strip()
 
                 data[id] = text
+
         # There are no subdivisions
         elif not subdiv_number:
 
             # Statute is null, has been repealed, renumbered, or expired
             if statute is None:
-
-                text = res.xpath('//div[@class="sr"]//text()').extract()[1:]             # Get section text
-                text = ' '.join(text).strip()
-                text = text.strip("[]")
+                
+                # Retreive and join section text but exclude the section number (we already have it)
+                text = res.xpath('//div[@class="sr"]//text()').extract()[1:]
+                text = ''.join(text).strip()
 
                 data[section_number] = text
 
             # Statute is not null
             else:
-                text = res.xpath('//div[@class="section"]//p//text()').getall()   # Main text description
-                text = ' '.join(text).strip()                                   # Join strings together   
+                text = res.xpath('//div[@class="section"]//p//text()').getall()     # Main text description
+                text = ''.join(text).strip()                                       # Join strings together   
                 data[section_number] = text
-        
         
         return data
 
