@@ -6,12 +6,19 @@
 
 # useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
+from scrapy.exceptions import DropItem
 
 
 class TaxscraperPipeline:
     def process_item(self, item, spider):
 
         adapter = ItemAdapter(item)
-        field_names = adapter.field_names()
         
+        # Drop all occurances of null statutes from the data
+        if adapter.get('statute') is None:
+            raise DropItem("Item dropped: Null statute")
+
+
         return item
+    
+    
