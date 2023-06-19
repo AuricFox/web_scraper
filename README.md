@@ -104,7 +104,9 @@ Here's how you can check a website's "robots.txt" file:
 
 By examining the "robots.txt" file, you can gain insights into the website's crawling policies and guidelines.
 
-## Helpful Links
+## Resources
+
+[Tax Machine Learning Repo](https://github.com/AuricFox/machine_learning)  
  
 [Scrapy Documentation](https://docs.scrapy.org/en/latest/index.html)  
 [2022 Minnesota Statutes](https://www.revisor.mn.gov/statutes/)

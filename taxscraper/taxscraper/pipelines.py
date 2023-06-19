@@ -10,15 +10,19 @@ from scrapy.exceptions import DropItem
 
 
 class TaxscraperPipeline:
-    def process_item(self, item, spider):
+    def __init__(self):
+        self.processed_items = set()  # Set to store unique identifiers of processed items
 
+    def process_item(self, item, spider):
         adapter = ItemAdapter(item)
-        
-        # Drop all occurances of null statutes from the data
-        if adapter.get('statute') is None:
+
+        # Assuming the 'statute' field is the unique identifier
+        statute = adapter.get('statute')
+        if statute is None:                                                 # Statute is Null
             raise DropItem("Item dropped: Null statute")
 
-
-        return item
-    
-    
+        if statute in self.processed_items:                                 # Statute is a duplicate
+            raise DropItem(f"Item dropped: Duplicate statute - {statute}")
+        else:                                                               # Statute is not null nor a duplicate
+            self.processed_items.add(statute)
+            return item
